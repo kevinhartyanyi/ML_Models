@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 # Distance functions
 
@@ -25,36 +26,14 @@ class K_Nearest_Neighbour:
 		num_test = X.shape[0]
 		Ypred = np.zeros(num_test, dtype = self.ytr.dtype)		
 		# loop over all test rows
-		for i in range(num_test):
+		for i in tqdm(range(num_test)):
 			# Chosse distance function
 			distance = L2_distance(self.Xtr, X[i])
 			k_nearest_neighbour = np.argpartition(distance,self.k)[:self.k] # Get the first k indexes with the smallest distance
 			k_predicted = self.ytr[k_nearest_neighbour] # Get classes for the k nearest neighbour
-			Ypred[i] = np.bincount(k_predicted).argmax() # Get the most frequently occured class 
+			Ypred[i] = np.bincount(k_predicted).argmax()# Get the most frequently occured class 
 
 		return Ypred
-
-"""
-# Test distance function
-dataset = [[2.7810836,2.550537003,0],
-	[1.465489372,2.362125076,0],
-	[3.396561688,4.400293529,0],
-	[1.38807019,1.850220317,0],
-	[3.06407232,3.005305973,0],
-	[7.627531214,2.759262235,1],
-	[5.332441248,2.088626775,1],
-	[6.922596716,1.77106367,1],
-	[8.675418651,-0.242068655,1],
-	[7.673756466,3.508563011,1]]
-
-X = np.array([x[:-1] for x in dataset])
-y = np.array([x[-1] for x in dataset])
-
-knn = K_Nearest_Neighbour()
-knn.train(X,y)
-test = np.asarray([[7.2141,3.1241]])
-predicted = knn.predict(test)
-print(predicted)"""
 
 
 # k-nearest neighbors on the Iris Flowers Dataset
@@ -102,16 +81,11 @@ train = dataset[:int((len(dataset)/2))]
 val   = dataset[int((len(dataset)/2)):int((3*len(dataset)/4))]
 test  = dataset[int((3*len(dataset)/4)):]
 
-
 X_train = np.array([x[:-1] for x in train])
 y_train = np.array([x[-1] for x in train])
 
 X_val = np.array([x[:-1] for x in val])
 y_val = np.array([x[-1] for x in val])
-
-X_test = np.array([x[:-1] for x in test])
-y_test = np.array([x[-1] for x in test])
-
 
 # evaluate algorithm
 num_neighbors = 5
@@ -121,3 +95,31 @@ K_NN.train(X_train,y_train, k=num_neighbors)
 predicted = K_NN.predict(X_val)
 accuracy = (predicted == y_val).mean()
 print('Mean Accuracy: %.3f%%' % (accuracy*100))
+
+
+# Mnist dataset
+from keras.datasets import mnist
+from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
+
+def make_flat(x): # From 2d to 1d
+	return x.reshape(x.shape[0],-1)
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Only use a smaller amount of the whole dataset, because it runs slowly
+x_train, y_train = x_train[:1000], y_train[:1000]
+x_test, y_test = x_test[:100], y_test[:100]
+
+x_train = make_flat(x_train) 
+x_test = make_flat(x_test) 
+
+
+k_nn = K_Nearest_Neighbour()
+k_nn.train(x_train, y_train,k=3)
+
+predicted = k_nn.predict(x_test)
+
+accuracy = accuracy_score(y_test, predicted)
+print('Mean Accuracy: %.3f%%' % (accuracy*100))
+
