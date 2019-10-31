@@ -1,35 +1,70 @@
+"""
+from sklearn.neighbors import KNeighborsClassifier
+
+k_nn = KNeighborsClassifier(n_neighbors=1, metric='euclidean')
+k_nn.fit(x_train, y_train)
+predict = k_nn.predict(x_test)
+"""
+
+
 import numpy as np
 from tqdm import tqdm
 
 # Distance functions
 
 # calculate the Euclidean distance between two vectors
-def L2_distance(a, b):
+def L2_distance_(a, b):
 	return np.linalg.norm(a-b,ord=2,axis=1)
 
 # calculate the Manhattan distance between two vectors
-def L1_distance(a, b):
+def L1_distance_(a, b):
 	return np.linalg.norm(a-b,ord=1,axis=1)
 
-class K_Nearest_Neighbour:
+class K_Nearest_Neighbour():
 	def __init__(self):
 		pass
 
-	def train(self, X, y, k=1):
+	def train(self, X, y):
 		# Simply remember all the training data
 		self.Xtr = X
 		self.ytr = y
-		# Number of neighbours
-		self.k = k
 
-	def predict(self, X):
+	def L2_distance(self, X):
+		"""
+		Compute the distance between each test point in X and each training point
+		in self.X_train
+		"""
 		num_test = X.shape[0]
+		num_train = self.Xtr.shape[0]
+		dists = np.zeros((num_test, num_train)) 
+		print("Running ...")
+		dists = np.reshape(np.sum(np.power(X,2), axis=1), [num_test,1]) + np.sum(np.power(self.Xtr,2), axis=1) - 2 * np.matmul(X, self.Xtr.T)
+		dists = np.sqrt(dists)
+		return dists
+	
+	def L2_distance_Old(self, X):
+		"""
+		Compute the distance between each test point in X and each training point
+		in self.X_tr using
+		"""
+		num_test = X.shape[0]
+		dist = []
+		for i in tqdm(range(num_test)):
+			# Chosse distance function
+			dist.append(L2_distance_(self.Xtr, X[i]))
+
+		return np.asarray(dist)
+
+	def predict(self, X, k=1):
+		distance = self.L2_distance(X)
+		return self.predict_labels(distance, k)
+
+	def predict_labels(self, distance, k=1):
+		num_test = distance.shape[0]
 		Ypred = np.zeros(num_test, dtype = self.ytr.dtype)		
 		# loop over all test rows
 		for i in tqdm(range(num_test)):
-			# Chosse distance function
-			distance = L2_distance(self.Xtr, X[i])
-			k_nearest_neighbour = np.argpartition(distance,self.k)[:self.k] # Get the first k indexes with the smallest distance
+			k_nearest_neighbour = np.argpartition(distance[i],k)[:k] # Get the first k indexes with the smallest distance
 			k_predicted = self.ytr[k_nearest_neighbour] # Get classes for the k nearest neighbour
 			Ypred[i] = np.bincount(k_predicted).argmax()# Get the most frequently occured class 
 
@@ -90,9 +125,9 @@ y_val = np.array([x[-1] for x in val])
 # evaluate algorithm
 num_neighbors = 5
 K_NN = K_Nearest_Neighbour()
-K_NN.train(X_train,y_train, k=num_neighbors)
-
-predicted = K_NN.predict(X_val)
+K_NN.train(X_train,y_train)
+dist = K_NN.L2_distance(X_val)
+predicted = K_NN.predict_labels(dist, k=num_neighbors)
 accuracy = (predicted == y_val).mean()
 print('Mean Accuracy: %.3f%%' % (accuracy*100))
 
@@ -116,10 +151,28 @@ x_test = make_flat(x_test)
 
 
 k_nn = K_Nearest_Neighbour()
-k_nn.train(x_train, y_train,k=3)
+k_nn.train(x_train, y_train)
 
-predicted = k_nn.predict(x_test)
+dist2 = k_nn.L2_distance(x_test)
+dist = k_nn.L2_distance_Old(x_test)
+
+predicted = k_nn.predict_labels(dist2, k=1)
+predicted2 = k_nn.predict_labels(dist, k=1)
 
 accuracy = accuracy_score(y_test, predicted)
 print('Mean Accuracy: %.3f%%' % (accuracy*100))
 
+accuracy = accuracy_score(y_test, predicted2)
+print('Mean Accuracy: %.3f%%' % (accuracy*100))
+
+
+
+
+from sklearn.neighbors import KNeighborsClassifier
+
+k = KNeighborsClassifier(n_neighbors=1, metric='euclidean')
+k.fit(x_train, y_train)
+p = k.predict(x_test)
+
+accuracy3 = accuracy_score(y_test, p)
+print('Mean Accuracy: %.3f%%' % (accuracy3*100))
